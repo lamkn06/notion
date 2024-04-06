@@ -1,13 +1,14 @@
 import DriveFileMoveIcon from '@mui/icons-material/DriveFileMove';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import { Box, ListItemAvatar, ListItemText } from '@mui/material';
+import { ListItemAvatar, ListItemButton, ListItemText } from '@mui/material';
 import { ItemType } from '../../typings/item';
+import { ItemsProps } from '../Items';
 
 export interface ItemProps {
   name: string;
   type: ItemType;
 
-  child?: ItemProps[];
+  child?: ItemsProps;
 }
 
 const Icon = (props: { type: ItemType }): JSX.Element => {
@@ -21,13 +22,13 @@ const Icon = (props: { type: ItemType }): JSX.Element => {
   }
 };
 
-export const Item = (props: ItemProps): JSX.Element => {
+export const Item = (props: ItemProps & { onClick(): void }): JSX.Element => {
   return (
-    <Box display={'flex'}>
+    <ListItemButton onClick={props.onClick}>
       <ListItemAvatar>
         <Icon type={props.type} />
       </ListItemAvatar>
       <ListItemText primary={props.name} secondary={props.type} />
-    </Box>
+    </ListItemButton>
   );
 };

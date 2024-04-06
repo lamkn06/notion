@@ -1,101 +1,93 @@
 import { useQuery } from '@tanstack/react-query';
-import { SyntheticEvent, useEffect, useState } from 'react';
-import { getDirectory, getList } from '../../api/list';
+import { useEffect, useState } from 'react';
+import { getList } from '../../api/list';
 import { ItemProps } from '../../components/Item';
 import { Items } from '../../components/Items';
-import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
-import { TreeItem } from '@mui/x-tree-view';
+import { Popup } from '../../components/PopUp';
 
 const HomePage = () => {
-  const [selected, setSelected] = useState<string>('');
+  const [param, setParam] = useState<string>('root');
   const [dataItems, setDataItems] = useState<ItemProps[]>([]);
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
-
-  const { data: dataRoot, isFetching: isRootFetching } = useQuery({
-    queryKey: ['list'],
-    queryFn: () => getList(),
+  const [popup, SetPopup] = useState({
+    open: false,
+    content: '',
   });
 
-  const { data: dataDirectory, refetch } = useQuery({
-    queryKey: ['directory'],
-    queryFn: () => getDirectory(selected),
-    enabled: !!selected,
+  const { data, isFetching } = useQuery({
+    queryKey: ['list', param],
+    queryFn: () => getList(param),
   });
 
   useEffect(() => {
-    setDataItems(dataRoot?.entries || []);
-  }, [dataRoot]);
-
-  useEffect(() => {
-    if (!selected) {
+    if (!data) {
       return;
     }
 
-    refetch();
-  }, [selected]);
+    if (data.id === 'root') {
+      return setDataItems(data?.entries || []);
+    }
 
-  useEffect(() => {
-    const updateChildItems = (
-      items: ItemProps[],
-      path: string[],
-      childItems: ItemProps[],
-    ): ItemProps[] => {
-      const [currentPath, ...remainingPath] = path;
-
-      return items.map((item) => {
-        if (item.name === currentPath) {
-          if (remainingPath.length === 0) {
+    if (data.contents) {
+      return SetPopup({
+        open: true,
+        content: data.contents,
+      });
+    }
+    try {
+      const selected = data.id.split('/').pop();
+      const mapEntries = (items: any) => {
+        return items.map((item: any) => {
+          if (item.name === selected) {
             return {
               ...item,
-              child: childItems,
-            };
-          } else if (item.child) {
-            return {
-              ...item,
-              child: updateChildItems(item.child, remainingPath, childItems),
+              child: {
+                id: data.id,
+                data: data.entries || [],
+              },
             };
           }
-        }
-        return item;
-      });
-    };
+          if (item.child) {
+            return {
+              ...item,
+              child: {
+                id: item.child.id,
+                data: mapEntries(item.child.data),
+              },
+            };
+          }
+          return item;
+        });
+      };
 
-    setDataItems((prevDataItems) => {
-      if (!dataDirectory) {
-        return prevDataItems;
-      }
-
-      const path = dataDirectory.id.split('/');
-      return updateChildItems(prevDataItems, path, dataDirectory.entries || []);
-    });
-  }, [dataDirectory]);
-
-  const handleOnClick = (item: ItemProps, parent?: ItemProps) => {
-    if (item.type === 'directory') {
-      const param = parent ? `${parent.name}/${item.name}` : item.name;
-      setSelected(param);
-      setExpandedItems((prev) => [...prev, param]);
+      setDataItems((prevDataItems) => mapEntries(prevDataItems));
+    } catch (error) {
+      console.log(error);
     }
-  };
+  }, [data, param]);
 
-  const handleExpandedItemsChange = (
-    event: React.SyntheticEvent,
-    itemIds: string[],
-  ) => {
-    setExpandedItems(itemIds);
+  const handleOnClick = (item: ItemProps, path: string) => {
+    setParam(path);
   };
 
   return (
-    <SimpleTreeView
-      expandedItems={expandedItems}
-      onExpandedItemsChange={handleExpandedItemsChange}
-    >
+    <>
       <Items
-        isLoading={isRootFetching}
+        isLoading={isFetching}
         data={dataItems}
         onClick={handleOnClick}
+        id={param}
       />
-    </SimpleTreeView>
+      <Popup
+        open={popup.open}
+        setOpen={() =>
+          SetPopup({
+            open: false,
+            content: '',
+          })
+        }
+        content={popup.content}
+      />
+    </>
   );
 };
 

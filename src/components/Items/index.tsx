@@ -1,14 +1,13 @@
-import { Container } from '@mui/material';
+import { Box, Container, List } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
-import { TreeItem } from '@mui/x-tree-view';
-import { ItemProps } from '../Item';
+import { Item, ItemProps } from '../Item';
 
-interface ItemsProps {
+export interface ItemsProps {
   isLoading: boolean;
+  id: string;
   data: ItemProps[];
-  parent?: ItemProps;
 
-  onClick(item: ItemProps, parent?: ItemProps): void;
+  onClick(item: ItemProps, path: string): void;
 }
 
 export const Items = (props: ItemsProps): JSX.Element => {
@@ -17,32 +16,39 @@ export const Items = (props: ItemsProps): JSX.Element => {
       {props.isLoading ? (
         <CircularProgress />
       ) : (
-        <>
-          {props.data.map((item) => {
-            console.log(
-              props.parent ? `${props.parent.name}/${item.name}` : item.name,
-            );
-            return (
-              <TreeItem
-                itemId={
-                  props.parent ? `${props.parent.name}/${item.name}` : item.name
-                }
-                label={item.name}
-                key={item.name}
-                onClick={() => props.onClick(item, props.parent)}
+        <List
+          sx={{ width: '100%', maxWidth: 360, bgcolor: 'background.paper' }}
+        >
+          {props.data.map((item) => (
+            <Box key={item.name}>
+              <Item
+                name={item.name}
+                type={item.type}
+                onClick={() => props.onClick(item, item.name)}
+              />
+              <List
+                sx={{
+                  width: '100%',
+                  maxWidth: 360,
+                  bgcolor: 'background.paper',
+                }}
               >
                 {item.child && (
-                  <Items
-                    isLoading={false}
-                    data={item.child}
-                    parent={item}
-                    onClick={props.onClick}
-                  />
+                  <Box marginLeft={10}>
+                    <Items
+                      isLoading={props.isLoading}
+                      id={item.child.id}
+                      data={item.child.data || []}
+                      onClick={(item: ItemProps) =>
+                        props.onClick(item, `${props.id}/${item.name}`)
+                      }
+                    />
+                  </Box>
                 )}
-              </TreeItem>
-            );
-          })}
-        </>
+              </List>
+            </Box>
+          ))}
+        </List>
       )}
     </Container>
   );

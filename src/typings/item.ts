@@ -6,4 +6,5 @@ export interface ItemsResponse {
     name: string;
     type: ItemType;
   }[];
+  contents?: string;
 }
