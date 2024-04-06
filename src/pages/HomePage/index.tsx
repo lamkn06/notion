@@ -1,48 +1,63 @@
-import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { getList } from '../../api/list';
 import { ItemProps } from '../../components/Item';
 import { Items } from '../../components/Items';
 import { Popup } from '../../components/PopUp';
+import { ItemsResponse } from '../../typings/item';
 
 const HomePage = () => {
   const [param, setParam] = useState<string>('root');
+  const [dataResponse, setDataResponse] = useState<ItemsResponse | null>(null);
+
+  const [isFetching, setIsFetching] = useState<boolean>(false);
   const [dataItems, setDataItems] = useState<ItemProps[]>([]);
   const [popup, SetPopup] = useState({
     open: false,
     content: '',
   });
 
-  const { data, isFetching } = useQuery({
-    queryKey: ['list', param],
-    queryFn: () => getList(param),
-  });
+  const fetch = async (param: string) => {
+    setIsFetching(true);
+    try {
+      const data = await getList(param);
+      setDataResponse(data);
+      return data;
+    } catch (error) {
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   useEffect(() => {
-    if (!data) {
+    fetch(param);
+  }, [param]);
+
+  useEffect(() => {
+    if (!dataResponse) {
       return;
     }
 
-    if (data.id === 'root') {
-      return setDataItems(data?.entries || []);
+    if (dataResponse.id === 'root') {
+      return setDataItems(dataResponse?.entries || []);
     }
 
-    if (data.contents) {
+    if (dataResponse.contents) {
       return SetPopup({
         open: true,
-        content: data.contents,
+        content: dataResponse.contents,
       });
     }
+
     try {
-      const selected = data.id.split('/').pop();
+      const selected = dataResponse.id.split('/').pop();
       const mapEntries = (items: any) => {
         return items.map((item: any) => {
           if (item.name === selected) {
             return {
               ...item,
               child: {
-                id: data.id,
-                data: data.entries || [],
+                id: dataResponse.id,
+                data: dataResponse.entries || [],
               },
             };
           }
@@ -63,7 +78,7 @@ const HomePage = () => {
     } catch (error) {
       console.log(error);
     }
-  }, [data, param]);
+  }, [dataResponse, param]);
 
   const handleOnClick = (item: ItemProps, path: string) => {
     setParam(path);
