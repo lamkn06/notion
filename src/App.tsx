@@ -2,6 +2,7 @@ import { ThemeProvider, createTheme } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Suspense, lazy } from 'react';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import CircularProgress from '@mui/material/CircularProgress';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 
@@ -24,7 +25,7 @@ const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
-        <Suspense fallback={<>loading</>}>
+        <Suspense fallback={<CircularProgress />}>
           <RouterProvider router={router} />
         </Suspense>
       </QueryClientProvider>
